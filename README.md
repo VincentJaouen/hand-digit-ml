@@ -1,1 +1,1 @@
-# handDigitML
+# Hand Digit ML
