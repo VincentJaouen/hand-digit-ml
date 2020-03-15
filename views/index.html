@@ -1,0 +1,128 @@
+<html>
+  <body>
+    <h1>Digit ML</h1>
+    <div>
+      <h3>Current data:</h3>
+      <ul>
+      <% _.forEach(data, function(digit) { %>
+        <li>digit {{ digit.digit }}: {{ digit.count }} rows</li>
+      <% }); %>
+      </ul>
+      <div>Random "one" drawn:</div>
+      <canvas id="sample" width="50" height="50" style="outline-width: 1px; outline-style: solid; margin: 20px;"></canvas>
+    </div>
+    <p>Please draw a 1 in the box below:</p>
+    <canvas id="canvas" width="50" height="50" style="outline-width: 1px; outline-style: solid; margin: 20px;"></canvas>
+    <button id="save">Save & clear</button>
+    <a href="#" id="download" onclick="downloadMat()">Download as matrix</a>
+    <script>
+      const feed = async (digit, imgData) => {
+        const response = await fetch('/feed', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ digit, imgData }),
+        });
+      };
+
+      const convertCanvasToGrayscale = (context, dimensions) => {
+        const grayscale = [];
+        for (let i = 0; i < dimensions.width; i += 1) {
+          grayscale[i] = [];
+          for (let j = 0; j < dimensions.height; j += 1) {
+            const pixel = context.getImageData(j, i, 1, 1);
+            grayscale[i][j] = pixel.data[3];
+          }
+        }
+        return grayscale;
+      };
+
+      const grayscaleToText = (grayscale) => {
+        let matrixText = '';
+        for (let i = 0; i < grayscale.length; i += 1) {
+          const row = grayscale[i];
+          for (let j = 0; j < row.height; j += 1) {
+            matrixText = `${matrixText}${row[j]} `;
+          }
+          matrixText = `${matrixText}\n`;
+        }
+        return matrixText;
+      };
+
+      const canvas = document.getElementById('canvas');
+      const save = document.getElementById('save');
+      const download = document.getElementById('download');
+      const rect = canvas.getBoundingClientRect();
+      const ctx = canvas.getContext('2d');
+      let drawing = false;
+      let lastX;
+      let lastY;
+      canvas.addEventListener('mousedown', e => {
+        x = Math.floor(e.clientX - rect.left);
+        y = Math.floor(e.clientY - rect.top);
+        drawing = true;
+        draw(x, y);
+      });
+      canvas.addEventListener('mouseup', e => {
+        drawing = false;
+      });
+      canvas.addEventListener('mouseleave', e => {
+        drawing = false;
+      });
+      canvas.addEventListener('mousemove', e => {
+        x = Math.floor(e.clientX - rect.left);
+        y = Math.floor(e.clientY - rect.top);
+        draw(x, y);
+      });
+      save.onclick = async () => {
+        const grayscale = convertCanvasToGrayscale(ctx, rect);
+        await feed(1, grayscale);
+        ctx.clearRect(0, 0, rect.width, rect.height);
+      };
+
+      const downloadMat = () => {
+        const grayscale = convertCanvasToGrayscale(ctx, rect);
+        download.href = 'data:attachment/text,' + encodeURI(grayscaleToText(grayscale));
+        download.target = '_blank';
+        download.download = 'imgMatrix.dat';
+        download.click();
+      };
+
+      const draw = (x, y) => {
+        if (drawing) {
+          ctx.beginPath();
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 1;
+          ctx.lineJoin = "round";
+          ctx.moveTo(lastX, lastY);
+          ctx.lineTo(x, y);
+          ctx.closePath();
+          ctx.stroke();
+        }
+        lastX = x; lastY = y;
+      };
+
+      const fillImage = (data, elem) => {
+        const sampleRect = elem.getBoundingClientRect();
+        const sampleCtx = elem.getContext('2d');
+        // rebuild rgba array
+        let array = [];
+
+        for(let i = 0; i < data.length; i += 1) {
+          const row = data[i];
+          for (let j = 0; j < row.length; j += 1) {
+            array = array.concat([0, 0, 0, row[j]]);
+          }
+        }
+        const pix = Uint8ClampedArray.from(array);
+        const imgData = new ImageData(pix, sampleRect.width, sampleRect.height);
+        sampleCtx.putImageData(imgData, 0, 0);
+      };
+
+      const ones = {{ ones }};
+      const sample = document.getElementById('sample');
+      const sampleIdx = Math.floor(Math.random() * Math.floor(ones.length - 1));
+      console.log(sampleIdx);
+      fillImage(ones[sampleIdx].image, sample);
+    </script>
+  </body>
+</html>

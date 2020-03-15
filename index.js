@@ -1,6 +1,7 @@
 const http = require('http');
 const fs = require('fs');
 const util = require('util');
+const _ = require('lodash');
 
 const knex = require('./knex');
 
@@ -27,36 +28,52 @@ const getBody = (req) => {
   });
 };
 
+_.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
+const renderView = async (view, ctx = {}, res, statusCode = 200) => {
+  res.statusCode = statusCode;
+  res.setHeader('Content-Type', 'text/html');
+  const viewContent = await readFile(`./views/${view}.html`);
+  const content = _.template(viewContent)(ctx);
+  res.end(content);
+};
+
+const renderJson = (data = {}, res, statusCode = 200) => {
+  res.statusCode = statusCode;
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify(data));
+};
+
 (async () => {
   const server = http.createServer(async (req, res) => {
     const { method, url } = req;
     const body = await getBody(req);
 
     if (url == '/') {
-      res.statusCode = 200;
-      res.setHeader('Content-Type', 'text/html');
-      const homeContent = await readFile(`${__dirname}/index.html`);
-      res.end(homeContent);
+      const data = await knex('digits').select('digit').count().groupBy('digit');
+      const ones = await knex('digits').where({ digit: 1 });
+      return renderView('index', { data, ones: JSON.stringify(ones) }, res);
     } else if (url === '/feed') {
-      res.setHeader('Content-Type', 'application/json');
-
       const { imgData, digit } = body;
-      if (!imgData || !digit) {
-        res.statusCode = 400;
-        res.end(JSON.stringify({ status: 'bad request' }));
-        return;
+      if (!imgData || !digit || digit > 9) {
+        return renderJson({ status: 'bad request' }, res, 400);
       }
-      res.statusCode = 200;
       const row = await knex('digits')
         .insert({ digit, image: JSON.stringify(imgData) }, ['id', 'digit']);
-      res.end(JSON.stringify(row));
-    } else if (url === '/digits/') {
-
-    } else {
-      res.statusCode = 404;
-      res.setHeader('Content-Type', 'text/html');
-      res.end('<html><body>Not found</body></html>');
+      return renderJson(row, res);
+    } else if (url.startsWith('/digits/')) {
+      // const match = url.match('^\/digits\/(\d)$');
+      const match = url.match('^\/digits\/([0-9]+)$');
+      if (match) {
+        const [id] = match;
+        const row = await knex('digits').where({ id }).first();
+        if (row) {
+          return renderJson(row, res);
+        }
+        return renderJson({}, res, 404);
+      }
     }
+
+    return renderView('404', {}, res, 404);
   });
 
   server.listen(port, () => {
