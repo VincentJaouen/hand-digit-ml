@@ -1,15 +1,16 @@
 <html>
   <body>
-    <h1>HAND DIGIT</h1>
+    <h1>Digit ML</h1>
+    <p>Please draw a 1:</p>
     <canvas id="canvas" width="50" height="50" style="outline-width: 1px; outline-style: solid; margin: 20px;"></canvas>
     <button id="toDataURL">Get data URL</button>
     <a href="#" id="download">Download matrix</a>
     <script>
-      const feed = async (data) => {
+      const feed = async (digit, imgData) => {
         const response = await fetch('/feed', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
+          body: JSON.stringify({ digit, imgData }),
         });
       };
 
@@ -54,7 +55,7 @@
         console.log(grayscale);
         console.log(rect.width, rect.height);
 
-        feed({ img: matrixText });
+        feed(1, grayscale);
 
         download.href = 'data:attachment/text,' + encodeURI(matrixText);
         download.target = '_blank';
