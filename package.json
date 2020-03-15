@@ -1,0 +1,11 @@
+{
+  "name": "hand-digit-ml",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:VincentJaouen/hand-digit-ml.git",
+  "author": "vincent@dowza.com",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index.js"
+  }
+}

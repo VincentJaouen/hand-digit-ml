@@ -1,0 +1,82 @@
+<html>
+  <body>
+    <h1>HAND DIGIT</h1>
+    <canvas id="canvas" width="50" height="50" style="outline-width: 1px; outline-style: solid; margin: 20px;"></canvas>
+    <button id="toDataURL">Get data URL</button>
+    <a href="#" id="download">Download matrix</a>
+    <script>
+      const feed = async (data) => {
+        const response = await fetch('/feed', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+      };
+
+      const canvas = document.getElementById('canvas');
+      const button = document.getElementById('toDataURL');
+      const download = document.getElementById('download');
+      const rect = canvas.getBoundingClientRect();
+      const ctx = canvas.getContext('2d');
+      let drawing = false;
+      let lastX;
+      let lastY;
+      canvas.addEventListener('mousedown', e => {
+        x = Math.floor(e.clientX - rect.left);
+        y = Math.floor(e.clientY - rect.top);
+        drawing = true;
+        draw(x, y);
+      });
+      canvas.addEventListener('mouseup', e => {
+        drawing = false;
+      });
+      canvas.addEventListener('mouseleave', e => {
+        drawing = false;
+      });
+      canvas.addEventListener('mousemove', e => {
+        x = Math.floor(e.clientX - rect.left);
+        y = Math.floor(e.clientY - rect.top);
+        draw(x, y);
+      });
+      button.onclick = () => {
+        // const { data } = ctx.getImageData(0, 0, rect.width, rect.height);
+        const grayscale = [];
+        let matrixText = '';
+        for (let i = 0; i < (rect.width - 1); i += 1) {
+          grayscale[i] = [];
+          for (let j = 0; j < (rect.height - 1); j += 1) {
+            const pixel = ctx.getImageData(j, i, 1, 1);
+            grayscale[i][j] = pixel.data[3];
+            matrixText = `${matrixText}${pixel.data[3]} `;
+          }
+          matrixText = `${matrixText}\n`;
+        }
+        console.log(grayscale);
+        console.log(rect.width, rect.height);
+
+        feed({ img: matrixText });
+
+        download.href = 'data:attachment/text,' + encodeURI(matrixText);
+        download.target = '_blank';
+        download.download = 'imgMatrix.dat';
+        // download.click();
+      };
+
+      const draw = (x, y) => {
+        if (drawing) {
+          ctx.beginPath();
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 1;
+          ctx.lineJoin = "round";
+          ctx.moveTo(lastX, lastY);
+          ctx.lineTo(x, y);
+          ctx.closePath();
+          ctx.stroke();
+        }
+        lastX = x; lastY = y;
+      };
+
+      console.log(button);
+    </script>
+  </body>
+</html>
