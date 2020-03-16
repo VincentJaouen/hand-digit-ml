@@ -2,7 +2,7 @@
 
 The goal of this small project is to implement a simple neural network learning algorithm to be able to recognize digits drawn by a user on a 50x50 canvas.
 
-Temporarily hosted on: http://ec2co-ecsel-p4tdjp57m03c-1083651336.us-east-1.elb.amazonaws.com:3000/
+Temporarily hosted on: http://ml.vjaouen.com:3000/
 
 ## How to launch locally
 
