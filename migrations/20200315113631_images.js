@@ -5,6 +5,7 @@ exports.up = function(knex) {
       table.increments('id');
       table.integer('digit').notNullable();
       table.jsonb('image').notNullable();
+      table.boolean('confirmed').notNullable().defaultTo(false);
     })
 };
 
