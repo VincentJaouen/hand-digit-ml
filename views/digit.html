@@ -1,0 +1,68 @@
+<html>
+<body>
+<h1>Confirm digit</h1>
+<div>
+  <h2>Is this digit a {{ row.digit }}?</h2>
+  <canvas id="digitCanvas" width="50" height="50" style="outline-width: 1px; outline-style: solid;"></canvas>
+</div>
+<br />
+<button id="confirm">Confirm & next</button>
+<select id="digit"></select>
+<button id="fix">Fix</button>
+<button id="delete">It's nothing, delete</button>
+<script>
+  const digitSelect = document.getElementById('digit');
+  for (let i = 0; i < 10; i += 1) {
+    const option = document.createElement('option');
+    option.setAttribute('value', i);
+    option.innerText = i;
+    digitSelect.appendChild(option);
+  }
+
+  const fillImage = (data, elem) => {
+    const sampleRect = elem.getBoundingClientRect();
+    const sampleCtx = elem.getContext('2d');
+    // rebuild rgba array
+    let array = [];
+
+    for(let i = 0; i < data.length; i += 1) {
+      const row = data[i];
+      for (let j = 0; j < row.length; j += 1) {
+        array = array.concat([0, 0, 0, row[j]]);
+      }
+    }
+    const pix = Uint8ClampedArray.from(array);
+    const imgData = new ImageData(pix, sampleRect.width, sampleRect.height);
+    sampleCtx.putImageData(imgData, 0, 0);
+  };
+
+  const feed = async (digit, imgData) => {
+    const response = await fetch('/feed', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ digit, imgData }),
+    });
+  };
+
+  const digitCanvas = document.getElementById('digitCanvas');
+  const digitId = {{ row.id }};
+  const digitData = {{ JSON.stringify(row.image) }};
+  fillImage(digitData, digitCanvas);
+
+  const confirmButton = document.getElementById('confirm');
+  confirmButton.onclick = () => {
+    window.location.href = `/digits/${digitId + 1}.html`;
+  };
+
+  const fixButton = document.getElementById('fix');
+  fix.onclick = async () => {
+    await fetch(`/digits/${digitId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ digit: digitSelect.value }),
+    });
+    window.location.reload();
+  };
+</script>
+</body>
+</html>

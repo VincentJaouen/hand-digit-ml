@@ -8,20 +8,45 @@
         <li>digit {{ digit.digit }}: {{ digit.count }} rows</li>
       <% }); %>
       </ul>
-      <div>Random "one" drawn:</div>
-      <canvas id="sample" width="50" height="50" style="outline-width: 1px; outline-style: solid; margin: 20px;"></canvas>
+      <div>Random samples:</div>
+      <div id="samples"></div>
     </div>
-    <p>Please draw a 1 in the box below:</p>
-    <canvas id="canvas" width="50" height="50" style="outline-width: 1px; outline-style: solid; margin: 20px;"></canvas>
+    <p>
+      Draw a
+      <select id="digit"></select>
+      in the box below:
+    </p>
+    <div>
+      <canvas id="feeder" width="50" height="50" style="outline-width: 1px; outline-style: solid;"></canvas>
+    </div>
+    <br />
+    <button id="clear">Clear</button>
     <button id="save">Save & clear</button>
     <a href="#" id="download" onclick="downloadMat()">Download as matrix</a>
     <script>
+      const digitSelect = document.getElementById('digit');
+      for (let i = 0; i < 10; i += 1) {
+        const option = document.createElement('option');
+        option.setAttribute('value', i);
+        option.innerText = i;
+        digitSelect.appendChild(option);
+      }
+
       const feed = async (digit, imgData) => {
         const response = await fetch('/feed', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ digit, imgData }),
         });
+      };
+
+      const createCanvasElement = (id) => {
+        const elem = document.createElement('canvas');
+        elem.setAttribute('id', id);
+        elem.setAttribute('width', 50);
+        elem.setAttribute('height', 50);
+        elem.setAttribute('style', 'outline-width: 1px; outline-style: solid; margin: 10px;');
+        return elem;
       };
 
       const convertCanvasToGrayscale = (context, dimensions) => {
@@ -48,59 +73,6 @@
         return matrixText;
       };
 
-      const canvas = document.getElementById('canvas');
-      const save = document.getElementById('save');
-      const download = document.getElementById('download');
-      const rect = canvas.getBoundingClientRect();
-      const ctx = canvas.getContext('2d');
-      let drawing = false;
-      let lastX;
-      let lastY;
-      canvas.addEventListener('mousedown', e => {
-        x = Math.floor(e.clientX - rect.left);
-        y = Math.floor(e.clientY - rect.top);
-        drawing = true;
-        draw(x, y);
-      });
-      canvas.addEventListener('mouseup', e => {
-        drawing = false;
-      });
-      canvas.addEventListener('mouseleave', e => {
-        drawing = false;
-      });
-      canvas.addEventListener('mousemove', e => {
-        x = Math.floor(e.clientX - rect.left);
-        y = Math.floor(e.clientY - rect.top);
-        draw(x, y);
-      });
-      save.onclick = async () => {
-        const grayscale = convertCanvasToGrayscale(ctx, rect);
-        await feed(1, grayscale);
-        ctx.clearRect(0, 0, rect.width, rect.height);
-      };
-
-      const downloadMat = () => {
-        const grayscale = convertCanvasToGrayscale(ctx, rect);
-        download.href = 'data:attachment/text,' + encodeURI(grayscaleToText(grayscale));
-        download.target = '_blank';
-        download.download = 'imgMatrix.dat';
-        download.click();
-      };
-
-      const draw = (x, y) => {
-        if (drawing) {
-          ctx.beginPath();
-          ctx.strokeStyle = 'black';
-          ctx.lineWidth = 1;
-          ctx.lineJoin = "round";
-          ctx.moveTo(lastX, lastY);
-          ctx.lineTo(x, y);
-          ctx.closePath();
-          ctx.stroke();
-        }
-        lastX = x; lastY = y;
-      };
-
       const fillImage = (data, elem) => {
         const sampleRect = elem.getBoundingClientRect();
         const sampleCtx = elem.getContext('2d');
@@ -118,11 +90,71 @@
         sampleCtx.putImageData(imgData, 0, 0);
       };
 
-      const ones = {{ ones }};
-      const sample = document.getElementById('sample');
-      const sampleIdx = Math.floor(Math.random() * Math.floor(ones.length - 1));
-      console.log(sampleIdx);
-      fillImage(ones[sampleIdx].image, sample);
+      const draw = (ctx, x, y) => {
+        if (ctx && drawing) {
+          ctx.beginPath();
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 1;
+          ctx.lineJoin = "round";
+          ctx.moveTo(lastX, lastY);
+          ctx.lineTo(x, y);
+          ctx.closePath();
+          ctx.stroke();
+        }
+        lastX = x; lastY = y;
+      };
+
+      const samples = {{ samples }};
+      const sampleContainer = document.getElementById('samples');
+      for (let sample of samples) {
+        const sampleElement = createCanvasElement(`sample-${sample.id}`);
+        sampleContainer.appendChild(sampleElement);
+        fillImage(sample.image, sampleElement);
+      }
+
+      const canvas = document.getElementById('feeder');
+      const save = document.getElementById('save');
+      const download = document.getElementById('download');
+      const rect = canvas.getBoundingClientRect();
+      const canvasCtx = canvas.getContext('2d');
+      let drawing = false;
+      let lastX;
+      let lastY;
+      canvas.addEventListener('mousedown', e => {
+        x = Math.floor(e.clientX - rect.left);
+        y = Math.floor(e.clientY - rect.top);
+        drawing = true;
+        draw(canvasCtx, x, y);
+      });
+      canvas.addEventListener('mouseup', e => {
+        drawing = false;
+      });
+      canvas.addEventListener('mouseleave', e => {
+        drawing = false;
+      });
+      canvas.addEventListener('mousemove', e => {
+        x = Math.floor(e.clientX - rect.left);
+        y = Math.floor(e.clientY - rect.top);
+        draw(canvasCtx, x, y);
+      });
+
+      clear.onclick = () => {
+        canvasCtx.clearRect(0, 0, rect.width, rect.height);
+      };
+      save.onclick = async () => {
+        const grayscale = convertCanvasToGrayscale(canvasCtx, rect);
+        const digit = digitSelect.value;
+        await feed(digit, grayscale);
+        canvasCtx.clearRect(0, 0, rect.width, rect.height);
+      };
+
+      const downloadMat = () => {
+        const grayscale = convertCanvasToGrayscale(canvasCtx, rect);
+        download.href = 'data:attachment/text,' + encodeURI(grayscaleToText(grayscale));
+        download.target = '_blank';
+        download.download = 'imgMatrix.dat';
+        download.click();
+      };
     </script>
   </body>
 </html>

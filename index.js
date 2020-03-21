@@ -5,7 +5,7 @@ const _ = require('lodash');
 
 const knex = require('./knex');
 
-const port = 3000;
+const port = 80;
 
 const readFile = util.promisify(fs.readFile);
 
@@ -48,11 +48,11 @@ const renderJson = (data = {}, res, statusCode = 200) => {
     const { method, url } = req;
     const body = await getBody(req);
 
-    if (url == '/') {
+    if (method === 'GET' && url == '/') {
       const data = await knex('digits').select('digit').count().groupBy('digit');
-      const ones = await knex('digits').where({ digit: 1 });
-      return renderView('index', { data, ones: JSON.stringify(ones) }, res);
-    } else if (url === '/feed') {
+      const samples = await knex('digits').orderByRaw('random()').limit(10);
+      return renderView('index', { data, samples: JSON.stringify(samples) }, res);
+    } else if (method === 'POST' && url === '/feed') {
       const { imgData, digit } = body;
       if (!imgData || !digit || digit > 9) {
         return renderJson({ status: 'bad request' }, res, 400);
@@ -62,11 +62,18 @@ const renderJson = (data = {}, res, statusCode = 200) => {
       return renderJson(row, res);
     } else if (url.startsWith('/digits/')) {
       // const match = url.match('^\/digits\/(\d)$');
-      const match = url.match('^\/digits\/([0-9]+)$');
+      const match = url.match('^\/digits\/([0-9]+)(.*)$');
       if (match) {
-        const [id] = match;
+        const [,id, format] = match;
         const row = await knex('digits').where({ id }).first();
+        if (method === 'PATCH') {
+          await knex('digits').update(body).where({ id });
+          Object.assign(row, body);
+        }
         if (row) {
+          if (format === '.html') {
+            return renderView('digit', { row }, res);
+          }
           return renderJson(row, res);
         }
         return renderJson({}, res, 404);
