@@ -3,6 +3,7 @@ const fs = require('fs');
 const util = require('util');
 const _ = require('lodash');
 
+const NeuralNetwork = require('./neural-network');
 const knex = require('./knex');
 
 const port = 80;
@@ -43,7 +44,15 @@ const renderJson = (data = {}, res, statusCode = 200) => {
   res.end(JSON.stringify(data));
 };
 
+const loadTheta = async () => {
+  const minFile = await readFile('./min-latest.json', 'utf8');
+  const parsed = JSON.parse(minFile);
+  return parsed.argument;
+};
+
 (async () => {
+  const theta = await loadTheta();
+  const neuralNetwork = NeuralNetwork.fromVector(theta,50 * 50, 25, 10);
   const server = http.createServer(async (req, res) => {
     const { method, url } = req;
     const body = await getBody(req);
@@ -57,9 +66,10 @@ const renderJson = (data = {}, res, statusCode = 200) => {
       if (!imgData || !digit || digit > 9) {
         return renderJson({ status: 'bad request' }, res, 400);
       }
+      const prediction = neuralNetwork.predictMatrix(imgData);
       const row = await knex('digits')
         .insert({ digit, image: JSON.stringify(imgData) }, ['id', 'digit']);
-      return renderJson(row, res);
+      return renderJson({ row, prediction }, res);
     } else if (url.startsWith('/digits/')) {
       // const match = url.match('^\/digits\/(\d)$');
       const match = url.match('^\/digits\/([0-9]+)(.*)$');

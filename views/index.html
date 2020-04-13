@@ -150,10 +150,10 @@
 
       const downloadMat = () => {
         const grayscale = convertCanvasToGrayscale(canvasCtx, rect);
-        download.href = 'data:attachment/text,' + encodeURI(grayscaleToText(grayscale));
+        console.log(grayscaleToText(grayscale));
+        download.href = 'data:attachment/text,' + encodeURI(JSON.stringify(grayscale));
         download.target = '_blank';
         download.download = 'imgMatrix.dat';
-        download.click();
       };
     </script>
   </body>

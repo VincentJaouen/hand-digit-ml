@@ -6,13 +6,20 @@
   "author": "vincent@dowza.com",
   "license": "MIT",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "mocha",
+    "learn": "node learn.js"
   },
   "dependencies": {
     "config": "^3.3.0",
     "js-yaml": "^3.13.1",
     "knex": "^0.20.11",
     "lodash": "^4.17.15",
+    "mathjs": "^6.6.1",
+    "optimization-js": "https://github.com/VincentJaouen/optimization-js",
     "pg": "^7.18.2"
+  },
+  "devDependencies": {
+    "mocha": "^7.1.1"
   }
 }
