@@ -58,8 +58,8 @@ describe('ML', () => {
       const theta2 = NeuralNetwork.randomMatrix(26, 10, 0.12);
       const nn = new NeuralNetwork(theta1, theta2);
       const imgData = math.random([1, 50 * 50], 0, 255);
-      const p = nn.computePredictions(imgData[0]);
-      assert.strictEqual(p.length, 10);
+      const { h } = nn.computePredictions(imgData[0]);
+      assert.strictEqual(h.length, 10);
     });
   });
 

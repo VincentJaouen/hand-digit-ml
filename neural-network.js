@@ -1,4 +1,5 @@
 const math = require('mathjs');
+const { readFile } = require('./utils');
 
 /**
  * Works with only 2 layers for now
@@ -15,6 +16,12 @@ class NeuralNetwork {
     return new NeuralNetwork(thet1, thet2);
   }
 
+  static async loadFromMinFile(path, inputLayerSize, hiddenLayerSize, numLabels) {
+    const minFile = await readFile(path, 'utf8');
+    const parsed = JSON.parse(minFile);
+    return this.fromVector(parsed.argument, inputLayerSize, hiddenLayerSize, numLabels);
+  }
+
   predictMatrix(matrixData) {
     const data = math.flatten(matrixData);
     return this.predict(data);
@@ -24,23 +31,21 @@ class NeuralNetwork {
    * Predict digit from image data
    */
   predict(data) {
-    const predictions = this.computePredictions(data);
-    return predictions.indexOf(math.max(predictions));
+    const { h } = this.computePredictions(data);
+    return h.flat().indexOf(math.max(h));
   }
 
   computePredictions(data) {
-    const input = math.matrix([1, ...data]);
-    const h1 =  NeuralNetwork.sigmoid(math.multiply(input, this.theta1));
-    const secondInput = math.matrix([1, ...h1.valueOf()]);
-    const h2 = NeuralNetwork.sigmoid(math.multiply(secondInput, this.theta2));
-    return h2.valueOf();
+    const a1 = math.matrix([[1, ...data]]);
+    const z2 = math.multiply(a1, this.theta1);
+    const a2 = math.concat([[1]], NeuralNetwork.sigmoid(z2), 0);
+    const h2 = NeuralNetwork.sigmoid(math.multiply(math.transpose(a2), this.theta2));
+    return { a1, z2, a2, h: h2.valueOf() };
   }
 
   static vectorizeLabel(label, numLabel) {
-    const vector = [];
-    for (let i = 0; i < numLabel; i += 1) {
-      vector[i] = i === parseInt(label) ? 1 : 0;
-    }
+    const vector = Array(numLabel).fill(0);
+    vector[parseInt(label)] = 1;
     return vector;
   }
 
@@ -65,10 +70,8 @@ class NeuralNetwork {
       const data = inputs[i].flat();
       const expected = NeuralNetwork.vectorizeLabel(expectations[i], theta2Size[1]);
       // const a1 = math.matrix([[1, ...ML.normalizeImageData(data)]]);
-      const a1 = math.matrix([[1, ...data]]);
-      const z2 = math.multiply(a1, this.theta1);
-      const a2 = math.concat([[1]], NeuralNetwork.sigmoid(z2), 0);
-      const Hi = this.computePredictions(data);
+      const { a1, z2, a2, h } = this.computePredictions(data);
+      const Hi = h.flat();
       // math.multiply(a2, this.theta2);
       const delta3 = math.matrix([math.subtract(Hi, expected)]);
       const delta2 = math.dotMultiply(math.multiply(pureTheta2, math.transpose(delta3)), NeuralNetwork.sigmoidGradient(z2));
