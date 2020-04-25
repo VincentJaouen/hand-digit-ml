@@ -1,14 +1,11 @@
 const http = require('http');
-const fs = require('fs');
-const util = require('util');
 const _ = require('lodash');
 
+const { readFile } = require('./utils');
 const NeuralNetwork = require('./neural-network');
 const knex = require('./knex');
 
 const port = 80;
-
-const readFile = util.promisify(fs.readFile);
 
 const getBody = (req) => {
   return new Promise(resolve => {
@@ -44,15 +41,8 @@ const renderJson = (data = {}, res, statusCode = 200) => {
   res.end(JSON.stringify(data));
 };
 
-const loadTheta = async () => {
-  const minFile = await readFile('./min-latest.json', 'utf8');
-  const parsed = JSON.parse(minFile);
-  return parsed.argument;
-};
-
 (async () => {
-  const theta = await loadTheta();
-  const neuralNetwork = NeuralNetwork.fromVector(theta,50 * 50, 25, 10);
+  const neuralNetwork = await NeuralNetwork.loadFromMinFile(`./theta/min-6`,50 * 50, 25, 10);
   const server = http.createServer(async (req, res) => {
     const { method, url } = req;
     const body = await getBody(req);
@@ -60,7 +50,14 @@ const loadTheta = async () => {
     if (method === 'GET' && url == '/') {
       const data = await knex('digits').select('digit').count().groupBy('digit');
       const samples = await knex('digits').orderByRaw('random()').limit(10);
-      return renderView('index', { data, samples: JSON.stringify(samples) }, res);
+      return renderView('index', {data, samples: JSON.stringify(samples)}, res);
+    } else if (method === 'POST' && url === '/predict') {
+      const { imgData } = body;
+      if (!imgData) {
+        return renderJson({ status: 'bad request' }, res, 400);
+      }
+      const prediction = neuralNetwork.predictMatrix(imgData);
+      return renderJson({ prediction }, res);
     } else if (method === 'POST' && url === '/feed') {
       const { imgData, digit } = body;
       if (!imgData || !digit || digit > 9) {
