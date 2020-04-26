@@ -42,7 +42,7 @@ const renderJson = (data = {}, res, statusCode = 200) => {
 };
 
 (async () => {
-  const neuralNetwork = await NeuralNetwork.loadFromMinFile(`./theta/min-6`,50 * 50, 25, 10);
+  const neuralNetwork = await NeuralNetwork.loadFromMinFile(`./theta/min-5`,50 * 50, 25, 10);
   const server = http.createServer(async (req, res) => {
     const { method, url } = req;
     const body = await getBody(req);
@@ -50,7 +50,8 @@ const renderJson = (data = {}, res, statusCode = 200) => {
     if (method === 'GET' && url == '/') {
       const data = await knex('digits').select('digit').count().groupBy('digit');
       const samples = await knex('digits').orderByRaw('random()').limit(10);
-      return renderView('index', {data, samples: JSON.stringify(samples)}, res);
+      const totalSet = data.reduce((count, digit) => count += parseInt(digit.count, 10), 0);
+      return renderView('index', {data, totalSet,samples: JSON.stringify(samples)}, res);
     } else if (method === 'POST' && url === '/predict') {
       const { imgData } = body;
       if (!imgData) {

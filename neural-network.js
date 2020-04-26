@@ -49,7 +49,7 @@ class NeuralNetwork {
     return vector;
   }
 
-  computeCost(inputs, expectations, lambda = 0) {
+  computeCost(inputs, expectations, lambda = 0, withGrad = true) {
     if (inputs.length !== expectations.length) {
       throw new Error('Inputs and expectations have different sizes');
     }
@@ -69,14 +69,15 @@ class NeuralNetwork {
     for (let i = 0; i < m; i += 1) {
       const data = inputs[i].flat();
       const expected = NeuralNetwork.vectorizeLabel(expectations[i], theta2Size[1]);
-      // const a1 = math.matrix([[1, ...ML.normalizeImageData(data)]]);
       const { a1, z2, a2, h } = this.computePredictions(data);
       const Hi = h.flat();
-      // math.multiply(a2, this.theta2);
-      const delta3 = math.matrix([math.subtract(Hi, expected)]);
-      const delta2 = math.dotMultiply(math.multiply(pureTheta2, math.transpose(delta3)), NeuralNetwork.sigmoidGradient(z2));
-      thetaGrad1 = math.add(thetaGrad1, math.transpose(math.multiply(delta2, a1)));
-      thetaGrad2 = math.add(thetaGrad2, math.multiply(a2, delta3));
+
+      if (withGrad) {
+        const delta3 = math.matrix([math.subtract(Hi, expected)]);
+        const delta2 = math.dotMultiply(math.multiply(pureTheta2, math.transpose(delta3)), NeuralNetwork.sigmoidGradient(z2));
+        thetaGrad1 = math.add(thetaGrad1, math.transpose(math.multiply(delta2, a1)));
+        thetaGrad2 = math.add(thetaGrad2, math.multiply(a2, delta3));
+      }
 
       for (let k = 0; k < Hi.length; k += 1) {
         const y = expected[k];
@@ -88,11 +89,12 @@ class NeuralNetwork {
     // Regularization
     cost = cost / m + (lambda / (2 * m)) * (math.sum(math.square(pureTheta1)) + math.sum(math.square(pureTheta2)));
 
-    const theta1Reg = math.subset(this.theta1, math.index(0, math.range(0, theta1Size[1])), math.zeros(1, theta1Size[1]));
-    const theta2Reg = math.subset(this.theta2, math.index(0, math.range(0, theta2Size[1])), math.zeros(1, theta2Size[1]));
-
-    thetaGrad1 = math.add(math.divide(thetaGrad1, m), math.multiply(lambda / m, theta1Reg));
-    thetaGrad2 = math.add(math.divide(thetaGrad2, m), math.multiply(lambda / m, theta2Reg));
+    if (withGrad) {
+      const theta1Reg = math.subset(this.theta1, math.index(0, math.range(0, theta1Size[1])), math.zeros(1, theta1Size[1]));
+      const theta2Reg = math.subset(this.theta2, math.index(0, math.range(0, theta2Size[1])), math.zeros(1, theta2Size[1]));
+      thetaGrad1 = math.add(math.divide(thetaGrad1, m), math.multiply(lambda / m, theta1Reg));
+      thetaGrad2 = math.add(math.divide(thetaGrad2, m), math.multiply(lambda / m, theta2Reg));
+    }
 
     return {
       cost,
