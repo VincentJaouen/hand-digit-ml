@@ -12,6 +12,8 @@ const inputLayerSize = THETA_SIZES[0][0] - 1;
 const hiddenLayerSize = THETA_SIZES[0][1];
 const numLabels = THETA_SIZES[1][1];
 
+const LEARN_CHUNK = 80;
+
 const formatData = (data) => data.reduce((reduce, row) => {
   reduce.inputs.push(row.image);
   reduce.y.push(row.digit);
@@ -52,14 +54,11 @@ const learn = async () => {
     .concat(math.flatten(initialTheta2).valueOf());
   const data = await knex('digits');
 
-  const { inputs: inp, y: exp } = formatData(data);
-  return computePrecision(inp, exp);
-
   const dataByDigit = _.groupBy(data, 'digit');
   // Separate data into learning data (80%) and cross validation data (20%)
   const { learnData, cvData } = Object.keys(dataByDigit).reduce((reduce, digit) => {
     const rows = dataByDigit[digit];
-    const [learn, cv] = _.chunk(rows, Math.round(rows.length * 80 / 100));
+    const [learn, cv] = _.chunk(rows, Math.round(rows.length * LEARN_CHUNK / 100));
     reduce.learnData.push(...learn);
     reduce.cvData.push(...cv);
     return reduce;
@@ -86,7 +85,7 @@ const learn = async () => {
 
     const gradFunc = (gradTheta) => {
       const nn = NeuralNetwork.fromVector(gradTheta, inputLayerSize, hiddenLayerSize, numLabels);
-      const { thetaGrad1, thetaGrad2 } = nn.computeCost(inputs, y, lambda);
+      const { thetaGrad1, thetaGrad2 } = nn.computeCost(inputs, y, lambda, false);
       return math.flatten(thetaGrad1).valueOf().concat(math.flatten(thetaGrad2).valueOf());
     };
 

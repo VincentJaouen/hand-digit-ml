@@ -8,7 +8,8 @@
   "scripts": {
     "start": "node index.js",
     "test": "mocha",
-    "learn": "node learn.js"
+    "learn": "node learn.js",
+    "compute-precision": "node compute-precision.js"
   },
   "dependencies": {
     "config": "^3.3.0",
