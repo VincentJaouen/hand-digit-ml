@@ -18,6 +18,9 @@
         display: none;
         margin-top: 20px;
       }
+      .stats {
+        font-size: 12px;
+      }
     </style>
   </head>
   <body>
@@ -51,6 +54,10 @@
           Is that a <span id="prediction"></span>? <button class="save">Yes, save</button><br /><br />
           No it's a (please select) <select id="digit"></select>  <button class="save">save</button><br /><br />
           <i>* Please make sure the right digit is selected when saving</i>
+          <div class="stats">
+            <p>Prediction stats</p>
+            <ul id="stats"></ul>
+          </div>
         </div>
       </div>
     </div>
@@ -78,7 +85,7 @@
           body: JSON.stringify({ imgData }),
         });
         const data = await resp.json();
-        return data.prediction;
+        return data;
       };
 
       const createCanvasElement = (id) => {
@@ -145,10 +152,12 @@
         lastX = x; lastY = y;
       };
 
-      const showPrediction = (digit) => {
+      const showPrediction = (predictions, prediction) => {
         predicted.style.display = 'block';
-        digitSelect.value = digit;
-        document.getElementById('prediction').innerText = digit;
+        digitSelect.value = prediction;
+        document.getElementById('prediction').innerText = prediction;
+        document.getElementById('stats').innerHTML = predictions.map((p, i) =>
+          `<li>Digit ${i}: ${p}</li>`).join('');
       };
 
       const samples = {{ samples }};
@@ -194,8 +203,8 @@
 
       predictButton.onclick = async () => {
         grayscale = convertCanvasToGrayscale(canvasCtx, rect);
-        const p = await predict(grayscale);
-        showPrediction(p);
+        const { predictions, prediction } = await predict(grayscale);
+        showPrediction(predictions, prediction);
       };
 
       const saveDigit = async () => {

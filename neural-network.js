@@ -24,7 +24,9 @@ class NeuralNetwork {
 
   predictMatrix(matrixData) {
     const data = math.flatten(matrixData);
-    return this.predict(data);
+    const { h } = this.computePredictions(data);
+    const predictions = h.flat();
+    return { predictions, prediction: predictions.indexOf(math.max(predictions)) };
   }
 
   /**

@@ -58,13 +58,13 @@ const renderJson = (data = {}, res, statusCode = 200) => {
         return renderJson({ status: 'bad request' }, res, 400);
       }
       const prediction = neuralNetwork.predictMatrix(imgData);
-      return renderJson({ prediction }, res);
+      return renderJson({ ...prediction }, res);
     } else if (method === 'POST' && url === '/feed') {
       const { imgData, digit } = body;
       if (!imgData || !digit || digit > 9) {
         return renderJson({ status: 'bad request' }, res, 400);
       }
-      const prediction = neuralNetwork.predictMatrix(imgData);
+      const { prediction } = neuralNetwork.predictMatrix(imgData);
       const row = await knex('digits')
         .insert({ digit, image: JSON.stringify(imgData) }, ['id', 'digit']);
       return renderJson({ row, prediction }, res);
