@@ -56,6 +56,8 @@ class NeuralNetwork {
       throw new Error('Inputs and expectations have different sizes');
     }
 
+    const start = Date.now();
+
     const m = inputs.length;
     const theta1Size = math.size(this.theta1).valueOf();
     const theta2Size = math.size(this.theta2).valueOf();
@@ -97,6 +99,8 @@ class NeuralNetwork {
       thetaGrad1 = math.add(math.divide(thetaGrad1, m), math.multiply(lambda / m, theta1Reg));
       thetaGrad2 = math.add(math.divide(thetaGrad2, m), math.multiply(lambda / m, theta2Reg));
     }
+
+    console.log(`Duration ${withGrad ? 'with' : 'without'}  grad = ${Date.now() - start}`);
 
     return {
       cost,
