@@ -1,5 +1,6 @@
 <html>
   <head>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.15/lodash.min.js" integrity="sha256-VeNaFBVDhoX3H+gJ37DpT/nTuZTdjYro9yBruHjVmoQ=" crossorigin="anonymous"></script>
     <title>Digit ML</title>
     <style>
       .container {
@@ -51,7 +52,7 @@
         <button id="predict">Predict</button>
         <a href="#" id="download" onclick="downloadMat()">Download as matrix</a>
         <div id="predicted">
-          Is that a <span id="prediction"></span>? <button class="save">Yes, save</button><br /><br />
+          Is that a <span id="prediction"></span> (<span id="reliability"></span>% reliable) ? <button class="save">Yes, save</button><br /><br />
           No it's a (please select) <select id="digit"></select>  <button class="save">save</button><br /><br />
           <i>* Please make sure the right digit is selected when saving</i>
           <div class="stats">
@@ -152,12 +153,22 @@
         lastX = x; lastY = y;
       };
 
+      const getSecondPrediction = (predictions) => {
+        // Remove duplicates
+        const set = new Set(predictions);
+        // Find second max
+        return predictions.indexOf(Array.from(set.values()).sort().reverse()[1]);
+      };
+
       const showPrediction = (predictions, prediction) => {
         predicted.style.display = 'block';
-        digitSelect.value = prediction;
+        console.log(getSecondPrediction(predictions));
+        digitSelect.value = getSecondPrediction(predictions);
         document.getElementById('prediction').innerText = prediction;
-        document.getElementById('stats').innerHTML = predictions.map((p, i) =>
-          `<li>Digit ${i}: ${p}</li>`).join('');
+        document.getElementById('reliability').innerText = predictions[prediction].toFixed(2);
+        const predictionObj = predictions.map((p, i) => ({ digit: i, value: p }));
+        document.getElementById('stats').innerHTML = _.sortBy(predictionObj, 'value').reverse().map(p =>
+          `<li>Digit ${p.digit}: ${p.value}</li>`).join('');
       };
 
       const samples = {{ samples }};
