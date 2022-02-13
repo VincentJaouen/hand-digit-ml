@@ -16,7 +16,7 @@
     "js-yaml": "^3.13.1",
     "knex": "^0.20.11",
     "lodash": "^4.17.21",
-    "mathjs": "^6.6.1",
+    "mathjs": "^7.5.1",
     "optimization-js": "https://github.com/VincentJaouen/optimization-js",
     "pg": "^7.18.2"
   },
