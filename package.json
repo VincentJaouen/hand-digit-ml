@@ -14,7 +14,7 @@
   "dependencies": {
     "config": "^3.3.0",
     "js-yaml": "^3.13.1",
-    "knex": "^0.20.11",
+    "knex": "^2.4.0",
     "lodash": "^4.17.21",
     "mathjs": "^6.6.1",
     "optimization-js": "https://github.com/VincentJaouen/optimization-js",
